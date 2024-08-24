@@ -18,9 +18,11 @@
         <img class="announcement" :class="{ 'disabled': !announcementAvailable }" :click="repeatAnnouncement" src="/announcement.svg" alt="Announcement" />
       </div>
       <div class="tile tile-wide">{{ announcementText }}</div>
-      <div class="tile tile-wide">
+      <div class="tile tile-wide debug-tile">
         <h5>Debug</h5>
         <p>Track ID: {{ currentTrackId }}</p>
+        <p v-if="!lastNodeFound">Searching for track-nodes</p>
+        <p v-else>Found node: {{ lastNodeFound?.trackNodeId }} (similarity: {{ lastNodeFound?.similarity }}, dist: {{ lastNodeFound?.distance }})</p>
         <p>Images queried: {{ imagesQueried }}</p>
         <p>{{ status }}</p>
       </div>
@@ -30,6 +32,7 @@
 </template>
 
 <script lang="ts">
+import type { FoundTrackNodeModel } from "@/models/found-track-node-model";
 import { ImageCaptureService } from "@/services/image-capture-service";
 import { ObjectDetectionService } from "@/services/object-detection-service";
 import { WebSocketService } from "@/services/websocket-service";
@@ -53,7 +56,7 @@ export default defineComponent({
     const userStatus = ref<string>("");
     const status = ref<string>("");
     const currentImage = ref<string>("");
-    const lastNodeFound = ref<Date | null>(null);
+    const lastNodeFound = ref<FoundTrackNodeModel | null>(null);
     const imageQueryIntervalMs = ref(500);
     const isQuerying = ref(false);
     const imagesQueried = ref(0);
@@ -212,10 +215,10 @@ export default defineComponent({
         console.log("Track completed");
       });
 
-      webSocketService.onHubEvent("TrackPositionPictureMatched", (data: boolean) => {
+      webSocketService.onHubEvent("TrackPositionPictureMatched", (data: FoundTrackNodeModel) => {
         status.value = data ? "Position found" : "Position not found";
-        if (data) {
-          lastNodeFound.value = new Date();
+        if (data && data.trackNodeId) {
+          lastNodeFound.value = data;
           imageQueryIntervalMs.value = 2000;
         } else {
           imageQueryIntervalMs.value = Math.max(500, imageQueryIntervalMs.value / 2);
@@ -272,6 +275,7 @@ export default defineComponent({
       imagesQueried,
       announcementAvailable,
       announcementText,
+      lastNodeFound,
       repeatAnnouncement
     }
   },
@@ -403,6 +407,10 @@ export default defineComponent({
             opacity: 0.2;
           }
         }
+      }
+
+      &.debug-tile {
+        line-height: 0.4rem;
       }
     }
 
