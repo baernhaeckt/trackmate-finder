@@ -18,6 +18,7 @@
       <div class="tile tile-wide">
         <h5>Debug</h5>
         <p>Track ID: {{ currentTrackId }}</p>
+        <p>Images queried: {{ imagesQueried }}</p>
         <p>{{ status }}</p>
       </div>
     </div>
@@ -48,6 +49,7 @@ export default defineComponent({
     const lastNodeFound = ref<Date | null>(null);
     const imageQueryIntervalMs = ref(500);
     const isQuerying = ref(false);
+    const imagesQueried = ref(0);
 
     const captureImage = async () => {
       const image = await imageCaptureService.extractImage();
@@ -55,7 +57,7 @@ export default defineComponent({
     }
 
     const queryImage = async () => {
-      if (isQuerying.value) {
+      if (isQuerying.value || !arrived.value) {
         return;
       }
 
@@ -68,6 +70,7 @@ export default defineComponent({
           mimeType: "image/jpeg",
           imageData: undefined
         });
+        imagesQueried.value++;
       } catch (error: any) {
         status.value = error;
       }
@@ -79,6 +82,10 @@ export default defineComponent({
     const uiUpdateInterval = setInterval(() => {
       if (!lastNodeFound.value) {
         const baseMessage = "Suche nach Startpunkt";
+        // Add 3 dots to the message every 500ms
+        userStatus.value = baseMessage + ".".repeat(((Date.now() / 500) % 3) + 1);
+      } else {
+        const baseMessage = "Auf dem Weg zum Ziel";
         // Add 3 dots to the message every 500ms
         userStatus.value = baseMessage + ".".repeat(((Date.now() / 500) % 3) + 1);
       }
@@ -103,6 +110,11 @@ export default defineComponent({
           imageQueryIntervalMs.value = 2000;
         } else {
           imageQueryIntervalMs.value = Math.max(500, imageQueryIntervalMs.value / 2);
+        }
+
+        if (imageQueryInterval) {
+          clearInterval(imageQueryInterval);
+          imageQueryInterval = setInterval(queryImage, imageQueryIntervalMs.value);
         }
       })
 
@@ -139,7 +151,8 @@ export default defineComponent({
       currentTrackId,
       userStatus,
       status,
-      currentImage
+      currentImage,
+      imagesQueried
     }
   },
 })
