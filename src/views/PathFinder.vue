@@ -45,6 +45,7 @@ export default defineComponent({
 
     let imageCaptureInterval: number | null = null;
     let imageQueryInterval: number | null = null;
+    let startTrackInterval: number | null = null;
     let lastAnnouncement: string | null = null;
 
     const arrived = ref<boolean>(false);
@@ -165,6 +166,24 @@ export default defineComponent({
       }
     }
 
+    const startTrack = async () => {
+      if (currentTrackId.value) {
+        if (startTrackInterval) {
+          clearInterval(startTrackInterval);
+        }
+        return;
+      }
+
+      try {
+        currentTrackId.value = await webSocketService.startTrack({
+          startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
+          goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
+        });
+      } catch (error: any) {
+        status.value = error;
+      }
+    }
+
     const uiUpdateInterval = setInterval(() => {
       if (!lastNodeFound.value) {
         const baseMessage = "Suche nach Startpunkt";
@@ -220,14 +239,7 @@ export default defineComponent({
       imageCaptureService.requestPermissions();
       imageCaptureService.startCapture();
 
-      try {
-        currentTrackId.value = await webSocketService.startTrack({
-          startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
-          goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
-        });
-      } catch (error: any) {
-        status.value = error;
-      }
+      startTrackInterval = setInterval(startTrack, 1000);
 
       imageCaptureInterval = setInterval(captureImage, 500);
       imageQueryInterval = setInterval(queryImage, imageQueryIntervalMs.value);
@@ -280,6 +292,10 @@ export default defineComponent({
       width: 100%;
       height: 100%;
       object-fit: fill;
+
+      @media (min-width: 768px) {
+        object-fit: contain;
+      }
     }
   }
 
