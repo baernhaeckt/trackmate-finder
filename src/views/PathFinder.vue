@@ -10,11 +10,14 @@
       <div class="heading-bar-container">
         <div class="heading-bar">{{ userStatus }}</div>
       </div>
-      <div class="tile no-padding">
-        <img :src="currentImage" alt="Current Image" />
+      <div class="tile no-padding position-relative">
+        <img :src="currentImage" id="CurrentImage" alt="Current Image" />
+        <canvas id="DetectionOverlay" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
       </div>
-      <div class="tile"></div>
-      <div class="tile tile-wide"></div>
+      <div class="tile">
+        <img class="announcement" :class="{ 'disabled': !announcementAvailable }" :click="repeatAnnouncement" src="/announcement.svg" alt="Announcement" />
+      </div>
+      <div class="tile tile-wide">{{ announcementText }}</div>
       <div class="tile tile-wide">
         <h5>Debug</h5>
         <p>Track ID: {{ currentTrackId }}</p>
@@ -28,6 +31,7 @@
 
 <script lang="ts">
 import { ImageCaptureService } from "@/services/image-capture-service";
+import { ObjectDetectionService } from "@/services/object-detection-service";
 import { WebSocketService } from "@/services/websocket-service";
 import { defineComponent, onMounted, onUnmounted, ref } from 'vue';
 
@@ -35,11 +39,13 @@ export default defineComponent({
   name: 'HomeView',
 
   setup() {
+    const objectDetectionService = new ObjectDetectionService(import.meta.env.VITE_OBJECTDETECTION_URL);
     const webSocketService = new WebSocketService(import.meta.env.VITE_BACKEND_WEBSOCKET_URL);
     let imageCaptureService: ImageCaptureService;
 
     let imageCaptureInterval: number | null = null;
     let imageQueryInterval: number | null = null;
+    let lastAnnouncement: string | null = null;
 
     const arrived = ref<boolean>(false);
     const currentTrackId = ref<string | null>(null);
@@ -50,10 +56,90 @@ export default defineComponent({
     const imageQueryIntervalMs = ref(500);
     const isQuerying = ref(false);
     const imagesQueried = ref(0);
+    const announcementAvailable = ref(false);
+    const announcementText = ref("");
+    const isDetecting = ref(false);
+
+    const repeatAnnouncement = () => {
+      status.value = "Announcement repeated";
+    }
 
     const captureImage = async () => {
+      if (!arrived.value) {
+        return;
+      }
+
       const image = await imageCaptureService.extractImage();
       currentImage.value = `data:image/jpeg;base64,${image.imageDataBase64}`;
+
+      detectObjects(image.imageData!);
+    }
+
+    const detectObjects = async (imageData: ImageData) => {
+      if (isDetecting.value) {
+        return;
+      }
+
+      isDetecting.value = true;
+
+      try {
+        const objects = await objectDetectionService.detectObjects(imageData);
+
+        if (objects.length === 0) {
+          status.value = "No objects detected";
+        } else {
+          status.value = `Detected ${objects.length} objects`;
+        }
+
+        // Get the image and canvas elements
+        const imageElement = document.getElementById("CurrentImage") as HTMLImageElement;
+        const canvas = document.getElementById("DetectionOverlay") as HTMLCanvasElement;
+
+        // Resize the canvas to match the image size
+        canvas.width = imageElement.width;
+        canvas.height = imageElement.height;
+
+        const ctx = canvas.getContext("2d")!;
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+        // Draw rectangles and labels for each detected object
+        objects.forEach((object: any) => {
+          const x1 = object.coordinates[0];
+          const y1 = object.coordinates[1];
+          const x2 = object.coordinates[2];
+          const y2 = object.coordinates[3];
+          const label = object.class_name;
+          const distance = object.distance;
+
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            x1 * imageElement.width / 256,
+            y1 * imageElement.height / 256,
+            (x2 - x1) * imageElement.width / 256,
+            (y2 - y1) * imageElement.height / 256
+          );
+
+          ctx.font = "16px Arial";
+          ctx.fillStyle = "red";
+          ctx.fillText(
+            `${label} (${distance.toFixed(2)}m)`,
+            x1 * imageElement.width / 256,
+            y1 * imageElement.height / 256 - 10
+          );
+        });
+      } catch (error) {
+        console.error('Error during object detection:', error);
+      } finally {
+        isDetecting.value = false;
+      }
+    };
+
+    const playAnnouncement = () => {
+      const audio = new Audio();
+      audio.src = `data:audio/mp3;base64,${lastAnnouncement}`;
+      audio.loop = false;
+      audio.play();
     }
 
     const queryImage = async () => {
@@ -118,15 +204,30 @@ export default defineComponent({
         }
       })
 
+      webSocketService.onHubEvent("InstructionAudio", (mp3AudioAsBase64: string) => {
+        announcementAvailable.value = true;
+        lastAnnouncement = mp3AudioAsBase64;
+
+        playAnnouncement();
+      });
+
+      webSocketService.onHubEvent("InstructionText", (text: string) => {
+        announcementText.value = text;
+      });
+
       const video = document.getElementById("video") as HTMLCanvasElement;
       imageCaptureService = new ImageCaptureService(video);
       imageCaptureService.requestPermissions();
       imageCaptureService.startCapture();
 
-      currentTrackId.value = await webSocketService.startTrack({
-        startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
-        goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
-      });
+      try {
+        currentTrackId.value = await webSocketService.startTrack({
+          startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
+          goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
+        });
+      } catch (error: any) {
+        status.value = error;
+      }
 
       imageCaptureInterval = setInterval(captureImage, 500);
       imageQueryInterval = setInterval(queryImage, imageQueryIntervalMs.value);
@@ -152,7 +253,10 @@ export default defineComponent({
       userStatus,
       status,
       currentImage,
-      imagesQueried
+      imagesQueried,
+      announcementAvailable,
+      announcementText,
+      repeatAnnouncement
     }
   },
 })
@@ -270,6 +374,15 @@ export default defineComponent({
         max-width: 100%;
         max-height: 100%;
         border-radius: 15px;
+
+        &.announcement {
+          width: 100%;
+          height: auto;
+
+          &.disabled {
+            opacity: 0.2;
+          }
+        }
       }
     }
 
