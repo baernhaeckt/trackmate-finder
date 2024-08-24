@@ -124,8 +124,8 @@ export default defineComponent({
       imageCaptureService.startCapture();
 
       currentTrackId.value = await webSocketService.startTrack({
-        startTrackNodeId: "01862996-aa15-43d4-b633-434d6582722d",
-        goalTrackNodeId: "ba578b15-117e-4ae2-a82d-b01b48279a0d"
+        startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
+        goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
       });
 
       imageCaptureInterval = setInterval(captureImage, 500);
