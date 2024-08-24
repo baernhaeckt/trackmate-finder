@@ -141,7 +141,7 @@ export default defineComponent({
 
     const playAnnouncement = () => {
       const audio = new Audio();
-      audio.src = `data:audio/mp3;base64,${lastAnnouncement}`;
+      audio.src = `data:audio/wav;base64,${lastAnnouncement}`;
       audio.loop = false;
       audio.play();
     }
