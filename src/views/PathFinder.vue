@@ -167,6 +167,10 @@ export default defineComponent({
     }
 
     const startTrack = async () => {
+      if (!arrived.value) {
+        return;
+      }
+
       if (currentTrackId.value) {
         if (startTrackInterval) {
           clearInterval(startTrackInterval);
