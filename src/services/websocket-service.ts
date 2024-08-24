@@ -1,6 +1,7 @@
 
 import type { CreateTrackNodeModel } from "@/models/create-track-node-model";
 import type { DevicePositionModel } from "@/models/device-position-model";
+import type { StartTrackModel, UploadTrackStepModel } from "@/models/track-models";
 import type { TrackNodeModel } from "@/models/track-node-model";
 import type { UploadPictureModel } from "@/models/upload-picture-model";
 import * as signalR from "@microsoft/signalr";
@@ -23,6 +24,58 @@ export class WebSocketService {
 
   async disconnect() {
     await this._trackNodeHub?.stop();
+  }
+
+  async startTrack(startTrackModel: StartTrackModel) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    const trackId = await this._trackNodeHub?.invoke<string>("StartTrack", startTrackModel);
+
+    return trackId;
+  }
+
+  async getRunningTracks() {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    const trackIds = await this._trackNodeHub?.invoke<string[]>("GetRunningTracks");
+
+    return trackIds;
+  }
+
+  async joinTrack(trackId: string) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    await this._trackNodeHub?.invoke("JoinTrack", trackId);
+  }
+
+  async endTrack(trackId: string) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    await this._trackNodeHub?.invoke("CompleteTrack", trackId);
+  }
+
+  async uploadTrackImage(image: UploadTrackStepModel) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    await this._trackNodeHub?.invoke("UploadTrackPositionPicture", image);
+  }
+
+  async onHubEvent(eventName: string, callback: (...args: any[]) => void) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    this._trackNodeHub.on(eventName, callback);
   }
 
   async trackNode(previousTrackNodeId: string | null, geoPosition: { latitude: number; longitude: number; altitude: number }, devicePosition: DevicePositionModel, image: UploadPictureModel) {

@@ -1,16 +1,16 @@
 
 export interface StartTrackModel {
-  startPoint: string,
+  startTrackNodeId: string,
   goalTrackNodeId: string
 }
 
 export interface UploadTrackStepModel {
   trackId: string,
   mimeType: string,
-  imageDataBase64: string
+  pictureBase64: string
   imageData: ImageData | undefined
 }
 
-export interface TrackStepResultModel {
+export interface TrackEventData {
   // TODO
 }
