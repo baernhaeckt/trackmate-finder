@@ -1,12 +1,12 @@
 <template>
-  <div class="container container-fluid">
+  <main>
     <RouterView />
-  </div>
+  </main>
 </template>
 
 <script lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import { defineComponent } from 'vue'
+import { defineComponent } from 'vue';
+import { RouterLink, RouterView } from 'vue-router';
 
 export default defineComponent({
   name: 'App',
