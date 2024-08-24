@@ -410,7 +410,7 @@ export default defineComponent({
       }
 
       &.debug-tile {
-        line-height: 0.4rem;
+        line-height: 1rem;
       }
     }
 
