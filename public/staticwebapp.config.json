@@ -1,0 +1,6 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/announcement.svg", "sbb_change_screen.jpg", "/favicon.ico", "sbb_change_screen.png", "sbb-logo.svg"]
+  }
+}
