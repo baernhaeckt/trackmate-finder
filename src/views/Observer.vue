@@ -6,10 +6,6 @@
       <div class="heading-bar-container">
         <div class="heading-bar">{{ userStatus }}</div>
       </div>
-      <div class="tile no-padding position-relative">
-      </div>
-      <div class="tile">
-      </div>
       <div class="tile tile-wide">
         <div class="map-container" id="MapContainer">
           <template v-if="trackNodes.length > 0">
@@ -105,16 +101,12 @@ export default defineComponent({
         userStatus.value = data ? "Position found" : "Position not found";
 
         if (data) {
-          if (currentTrackNodeId.value) {
+          if (currentTrackNodeId.value && !visitedTrackNodeIds.value.includes(currentTrackNodeId.value)) {
             visitedTrackNodeIds.value.push(currentTrackNodeId.value);
           }
 
           currentTrackNodeId.value = data.trackNodeId;
           console.log('TrackPositionPictureMatched', data);
-
-          setTimeout(() => {
-            currentTrackNodeId.value = null;
-          }, 2000);
         }
       });
 
