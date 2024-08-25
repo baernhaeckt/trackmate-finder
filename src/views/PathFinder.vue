@@ -70,6 +70,7 @@ export default defineComponent({
 
     const repeatAnnouncement = () => {
       status.value = "Announcement repeated";
+      playAnnouncement();
     }
 
     const captureImage = async () => {
@@ -89,7 +90,6 @@ export default defineComponent({
       }
 
       isDetecting.value = true;
-
       try {
         const objects = await objectDetectionService.detectObjects(imageData);
 
@@ -159,7 +159,7 @@ export default defineComponent({
       try {
         const image = await imageCaptureService.extractImage();
         await webSocketService.uploadTrackImage({
-          trackId: currentTrackId.value!,
+          trackId: currentTrackId.value,
           pictureBase64: image.imageDataBase64,
           mimeType: "image/jpeg",
           imageData: undefined
@@ -230,7 +230,7 @@ export default defineComponent({
         status.value = data ? "Position found" : "Position not found";
         if (data && data.trackNodeId) {
           lastNodeFound.value = data;
-          imageQueryIntervalMs.value = 2000;
+          imageQueryIntervalMs.value = 1000;
         } else {
           imageQueryIntervalMs.value = Math.max(500, imageQueryIntervalMs.value / 2);
         }
