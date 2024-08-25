@@ -285,18 +285,18 @@ export default defineComponent({
         align-items: center;
         cursor: pointer;
 
+        &.visited {
+          background: #00e700;
+          color: #000;
+          box-shadow: 0 0 10px 5px #00e700;
+          animation: pulse 1s infinite;
+        }
+
         &.selected {
           background: #e70000;
           color: #fff;
           box-shadow: 0 0 10px 5px #e70000;
 
-          animation: pulse 1s infinite;
-        }
-
-        &.visited {
-          background: #00e700;
-          color: #000;
-          box-shadow: 0 0 10px 5px #00e700;
           animation: pulse 1s infinite;
         }
 
