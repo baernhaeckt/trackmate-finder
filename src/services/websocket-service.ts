@@ -46,12 +46,30 @@ export class WebSocketService {
     return trackIds;
   }
 
+  async getAllTrackNodes() {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    const trackNodes = await this._trackNodeHub?.invoke<TrackNodeModel[]>("GetAllTrackNodes");
+
+    return trackNodes;
+  }
+
   async joinTrack(trackId: string) {
     if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
       throw new Error("The WebSocket connection is not yet established.");
     }
 
     await this._trackNodeHub?.invoke("JoinTrack", trackId);
+  }
+
+  async leaveTrack(trackId: string) {
+    if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("The WebSocket connection is not yet established.");
+    }
+
+    await this._trackNodeHub?.invoke("LeaveTrack", trackId);
   }
 
   async endTrack(trackId: string) {

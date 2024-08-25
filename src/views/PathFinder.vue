@@ -51,7 +51,11 @@ export default defineComponent({
     let startTrackInterval: number | null = null;
     let lastAnnouncement: string | null = null;
 
+    const startNodeId = "3043adb1-63f2-4786-bf95-723ab0684cd6";
+    const goalNodeId = "cca513e5-6209-45d5-9792-351df794e3c0";
+
     const arrived = ref<boolean>(false);
+    const trackNavigationFinished = ref<boolean>(false);
     const currentTrackId = ref<string | null>(null);
     const userStatus = ref<string>("");
     const status = ref<string>("");
@@ -147,7 +151,7 @@ export default defineComponent({
     }
 
     const queryImage = async () => {
-      if (isQuerying.value || !arrived.value) {
+      if (isQuerying.value || !arrived.value || trackNavigationFinished.value) {
         return;
       }
 
@@ -183,23 +187,30 @@ export default defineComponent({
 
       try {
         currentTrackId.value = await webSocketService.startTrack({
-          startTrackNodeId: "3043adb1-63f2-4786-bf95-723ab0684cd6",
-          goalTrackNodeId: "cca513e5-6209-45d5-9792-351df794e3c0"
+          startTrackNodeId: startNodeId,
+          goalTrackNodeId: goalNodeId
         });
       } catch (error: any) {
         status.value = error;
       }
     }
 
-    const uiUpdateInterval = setInterval(() => {
+    const uiUpdateInterval = setInterval(async () => {
       if (!lastNodeFound.value) {
         const baseMessage = "Suche nach Startpunkt";
         // Add 3 dots to the message every 500ms
         userStatus.value = baseMessage + ".".repeat(((Date.now() / 500) % 3) + 1);
-      } else {
+      } else if (!trackNavigationFinished.value) {
         const baseMessage = "Auf dem Weg zum Ziel";
         // Add 3 dots to the message every 500ms
         userStatus.value = baseMessage + ".".repeat(((Date.now() / 500) % 3) + 1);
+      } else {
+        userStatus.value = "Ziel erreicht";
+        announcementText.value = "Wunderbar, Du hast das Ziel erreicht! Danke dass Du SBB TrackMate benutzt hast.";
+        lastAnnouncement = null;
+
+        await webSocketService.endTrack(currentTrackId.value!);
+        currentTrackId.value = null;
       }
     }, 500);
 
@@ -222,6 +233,14 @@ export default defineComponent({
           imageQueryIntervalMs.value = 2000;
         } else {
           imageQueryIntervalMs.value = Math.max(500, imageQueryIntervalMs.value / 2);
+        }
+
+        if (data.trackNodeId === goalNodeId) {
+          trackNavigationFinished.value = true;
+          if (imageQueryInterval) {
+            clearInterval(imageQueryInterval);
+          }
+          return;
         }
 
         if (imageQueryInterval) {
