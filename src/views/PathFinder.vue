@@ -53,6 +53,7 @@ export default defineComponent({
 
     const startNodeId = "3043adb1-63f2-4786-bf95-723ab0684cd6";
     const goalNodeId = "cca513e5-6209-45d5-9792-351df794e3c0";
+    const enableAudioAnouncement = false;
 
     const arrived = ref<boolean>(false);
     const trackNavigationFinished = ref<boolean>(false);
@@ -144,6 +145,10 @@ export default defineComponent({
     };
 
     const playAnnouncement = () => {
+      if (!enableAudioAnouncement) {
+        return;
+      }
+
       const audio = new Audio();
       audio.src = `data:audio/wav;base64,${lastAnnouncement}`;
       audio.loop = false;
@@ -250,6 +255,10 @@ export default defineComponent({
       })
 
       webSocketService.onHubEvent("InstructionAudio", (mp3AudioAsBase64: string) => {
+        if (!enableAudioAnouncement) {
+          return;
+        }
+
         announcementAvailable.value = true;
         lastAnnouncement = mp3AudioAsBase64;
 
@@ -257,6 +266,7 @@ export default defineComponent({
       });
 
       webSocketService.onHubEvent("InstructionText", (text: string) => {
+        announcementAvailable.value = true;
         announcementText.value = text;
       });
 
