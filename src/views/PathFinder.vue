@@ -151,7 +151,7 @@ export default defineComponent({
     }
 
     const queryImage = async () => {
-      if (isQuerying.value || !arrived.value || trackNavigationFinished.value) {
+      if (isQuerying.value || !arrived.value || trackNavigationFinished.value || !currentTrackId.value) {
         return;
       }
 
