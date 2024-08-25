@@ -15,7 +15,7 @@
           <template v-if="trackNodes.length > 0">
             <div class="map">
               <template v-for="trackNode in trackNodes">
-                <div class="track-node" :class="{ selected: currentTrackNodeId === trackNode.id }" :style="getTrackNodeStyles(trackNode, trackNodes)">
+                <div class="track-node" :class="{ selected: currentTrackNodeId === trackNode.id, visited: visitedTrackNodeIds.includes(trackNode.id) }" :style="getTrackNodeStyles(trackNode, trackNodes)">
                 </div>
               </template>
             </div>
@@ -53,6 +53,7 @@ export default defineComponent({
 
     const currentTrackId = ref<string | null>(null);
     const currentTrackNodeId = ref<string | null>(null);
+    const visitedTrackNodeIds = ref<string[]>([]);
     const trackNodes = ref<TrackNodeModel[]>([]);
 
     const loadAllTrackNodes = async () => {
@@ -104,6 +105,10 @@ export default defineComponent({
         userStatus.value = data ? "Position found" : "Position not found";
 
         if (data) {
+          if (currentTrackNodeId.value) {
+            visitedTrackNodeIds.value.push(currentTrackNodeId.value);
+          }
+
           currentTrackNodeId.value = data.trackNodeId;
           console.log('TrackPositionPictureMatched', data);
 
@@ -139,6 +144,7 @@ export default defineComponent({
     return {
       currentTrackId,
       currentTrackNodeId,
+      visitedTrackNodeIds,
       status,
       userStatus,
       trackNodes,
@@ -290,6 +296,16 @@ export default defineComponent({
         &.selected {
           background: #e70000;
           color: #fff;
+          box-shadow: 0 0 10px 5px #e70000;
+
+          animation: pulse 1s infinite;
+        }
+
+        &.visited {
+          background: #00e700;
+          color: #000;
+          box-shadow: 0 0 10px 5px #00e700;
+          animation: pulse 1s infinite;
         }
 
         .track-node-inner {
@@ -301,6 +317,20 @@ export default defineComponent({
         }
       }
     }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
   }
 }
 </style>

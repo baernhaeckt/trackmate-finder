@@ -27,6 +27,11 @@ export class WebSocketService {
     await this._trackNodeHub?.stop();
   }
 
+  async reconnect() {
+    await this._trackNodeHub?.stop();
+    await this._trackNodeHub?.start();
+  }
+
   async startTrack(startTrackModel: StartTrackModel) {
     if (!this._trackNodeHub || this._trackNodeHub.state !== signalR.HubConnectionState.Connected) {
       throw new Error("The WebSocket connection is not yet established.");

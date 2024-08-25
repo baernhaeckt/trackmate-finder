@@ -163,17 +163,27 @@ export default defineComponent({
       isQuerying.value = true;
       try {
         const image = await imageCaptureService.extractImage();
-        await webSocketService.uploadTrackImage({
-          trackId: currentTrackId.value,
-          pictureBase64: image.imageDataBase64,
-          mimeType: "image/jpeg",
-          imageData: undefined
-        });
+
+        // Create a timeout promise that rejects after 5 seconds
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Upload timed out after 5 seconds')), 5000)
+        );
+
+        // Race the upload promise against the timeout promise
+        await Promise.race([
+          webSocketService.uploadTrackImage({
+            trackId: currentTrackId.value,
+            pictureBase64: image.imageDataBase64,
+            mimeType: "image/jpeg",
+            imageData: undefined
+          }),
+          timeoutPromise
+        ]);
+
         imagesQueried.value++;
       } catch (error: any) {
         status.value = error;
-      }
-      finally {
+      } finally {
         isQuerying.value = false;
       }
     }
@@ -222,10 +232,6 @@ export default defineComponent({
     onMounted(async () => {
 
       await webSocketService.connect();
-
-      webSocketService.onHubEvent("UserJoined", () => {
-        console.log("User joined");
-      });
 
       webSocketService.onHubEvent("TrackCompleted", () => {
         console.log("Track completed");
